@@ -44,3 +44,12 @@ def test_missing_ucp_is_reported():
         raise DiscoveryError("nope")
 
     assert any("ucp" in p for p in discover("kettle.example", fetch=fake).problems)
+
+
+def test_brief_formats_prices():
+    from poppy_agent.ucp import brief
+
+    r = {"products": [{"title": "Sock\n Pair", "url": "https://x.example/p", "price_range": {"min": {"amount": 1400, "currency": "USD"}},
+                       "variants": [{"availability": {"available": True}}]}]}
+    assert brief(r) == "- Sock Pair | 14.00 USD | in stock | https://x.example/p"
+    assert brief({}) == "(no products)"

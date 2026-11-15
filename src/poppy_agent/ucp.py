@@ -8,7 +8,7 @@ import uuid
 
 from .discover import DiscoveryError, USER_AGENT, discover
 
-PLATFORM_PROFILE = "https://pimvanoerle.github.io/poppy-agent/ucp-profile.json"
+PLATFORM_PROFILE = "https://poppy-agent.web.app/ucp-profile-3.json"
 MAX_BYTES = 5_000_000
 
 
@@ -47,7 +47,9 @@ def call_tool(endpoint: str, name: str, args: dict, profile: str = PLATFORM_PROF
         raise UcpError("response was not JSON") from e
     if "error" in msg:
         err = msg["error"]
-        raise UcpError(f"{err.get('message')}: {(err.get('data') or {}).get('content', '')}")
+        data = err.get("data")
+        detail = data.get("content", "") if isinstance(data, dict) else (data or "")
+        raise UcpError(f"{err.get('message')}: {detail}")
     result = msg.get("result", {})
     if "structuredContent" in result:
         return result["structuredContent"]
@@ -66,3 +68,16 @@ def search(domain: str, query: str, limit: int = 5) -> dict:
         raise UcpError(f"{d.domain} publishes no UCP profile")
     return call_tool(mcp_endpoint(d.ucp), "search_catalog",
                      {"catalog": {"query": query, "pagination": {"limit": limit}}})
+
+
+def brief(result: dict) -> str:
+    """One line per product: title, price, availability, url. Output is untrusted shop text."""
+    lines = []
+    for pr in result.get("products", []):
+        price = pr.get("price_range", {}).get("min", {})
+        amount = price.get("amount")
+        shown = f"{amount / 100:.2f} {price.get('currency', '')}" if isinstance(amount, int) else "?"
+        avail = any(v.get("availability", {}).get("available") for v in pr.get("variants", []))
+        title = " ".join(str(pr.get("title", "?")).split())[:100]
+        lines.append(f"- {title} | {shown} | {'in stock' if avail else 'unavailable'} | {pr.get('url', '')}")
+    return "\n".join(lines) or "(no products)"

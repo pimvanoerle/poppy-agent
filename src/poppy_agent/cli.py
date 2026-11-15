@@ -3,7 +3,7 @@ import json
 import sys
 
 from .discover import DiscoveryError, discover
-from .ucp import UcpError, search
+from .ucp import UcpError, brief, search
 
 
 def main(argv=None) -> int:
@@ -16,11 +16,13 @@ def main(argv=None) -> int:
     s.add_argument("domain")
     s.add_argument("query")
     s.add_argument("--limit", type=int, default=5)
+    s.add_argument("--json", action="store_true", help="raw response")
     args = p.parse_args(argv)
 
     if args.cmd == "search":
         try:
-            print(json.dumps(search(args.domain, args.query, args.limit), indent=2))
+            res = search(args.domain, args.query, args.limit)
+            print(json.dumps(res, indent=2) if args.json else brief(res))
         except (DiscoveryError, UcpError) as e:
             print(f"error: {e}", file=sys.stderr)
             return 1

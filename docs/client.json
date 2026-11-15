@@ -1,8 +1,8 @@
 {
-  "client_id": "https://pimvanoerle.github.io/poppy-agent/client.json",
+  "client_id": "https://poppy-agent.web.app/client.json",
   "client_name": "iPinch (poppy-agent)",
   "client_uri": "https://github.com/pimvanoerle/poppy-agent",
-  "jwks_uri": "https://pimvanoerle.github.io/poppy-agent/jwks.json",
+  "jwks_uri": "https://poppy-agent.web.app/jwks.json",
   "redirect_uris": ["http://127.0.0.1:8765/callback"],
   "grant_types": ["authorization_code", "urn:ietf:params:oauth:grant-type:device_code", "refresh_token"],
   "response_types": ["code"],
