@@ -3,6 +3,7 @@ import json
 import sys
 
 from .discover import DiscoveryError, discover
+from .ucp import UcpError, search
 
 
 def main(argv=None) -> int:
@@ -11,7 +12,19 @@ def main(argv=None) -> int:
     d = sub.add_parser("discover", help="show what a business publishes for agents")
     d.add_argument("domain")
     d.add_argument("--json", action="store_true", help="print raw poppy.json")
+    s = sub.add_parser("search", help="search a shop's catalog (signed out, read only)")
+    s.add_argument("domain")
+    s.add_argument("query")
+    s.add_argument("--limit", type=int, default=5)
     args = p.parse_args(argv)
+
+    if args.cmd == "search":
+        try:
+            print(json.dumps(search(args.domain, args.query, args.limit), indent=2))
+        except (DiscoveryError, UcpError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        return 0
 
     try:
         result = discover(args.domain)
