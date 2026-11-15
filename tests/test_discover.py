@@ -53,3 +53,13 @@ def test_brief_formats_prices():
                        "variants": [{"availability": {"available": True}}]}]}
     assert brief(r) == "- Sock Pair | 14.00 USD | in stock | https://x.example/p"
     assert brief({}) == "(no products)"
+
+
+def test_mcp_handshake_and_unknown_tool():
+    from poppy_agent.mcp_server import handle
+
+    assert handle({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})["result"]["serverInfo"]["name"] == "poppy-agent"
+    names = [t["name"] for t in handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})["result"]["tools"]]
+    assert "poppy_search" in names and not any("checkout" in n or "buy" in n for n in names)
+    assert handle({"jsonrpc": "2.0", "method": "notifications/initialized"}) is None
+    assert "error" in handle({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "nope"}})

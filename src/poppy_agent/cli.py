@@ -17,7 +17,14 @@ def main(argv=None) -> int:
     s.add_argument("query")
     s.add_argument("--limit", type=int, default=5)
     s.add_argument("--json", action="store_true", help="raw response")
+    sub.add_parser("mcp", help="run the MCP server on stdio (read-only tools)")
     args = p.parse_args(argv)
+
+    if args.cmd == "mcp":
+        from .mcp_server import serve
+
+        serve()
+        return 0
 
     if args.cmd == "search":
         try:

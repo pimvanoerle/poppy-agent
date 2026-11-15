@@ -14,7 +14,8 @@ Built so [iPinch](https://github.com/ipinchthecrab), a crab with a laptop, can g
 | Catalog search over UCP | planned |
 | Agent identity (`Poppy-Session` JWTs, client metadata document) | planned |
 | Sign-in (PKCE / device grant) | planned |
-| MCP server wrapper | planned |
+| MCP server (`poppy-agent mcp`): `poppy_discover`, `poppy_search`, `poppy_ask`, read only | works |
+| Purchase with human approval, paying via Shop Pay | end goal, not started |
 
 ## Use
 
@@ -28,7 +29,7 @@ Exit code is 0 if the file looks fine, 2 if it parsed but has problems, 1 on fet
 
 ## Safety stance
 
-- The agent never completes a purchase on its own. Checkout stops at the handoff link and a human pays.
+- Read-only tools are open. A purchase only happens after an explicit per-purchase human approval of the exact items, total, shipping address and shop; there is no standing permission to buy.
 - Sign-in needs explicit human approval, with minimal scopes.
 - Anything a shop sends back (product text, agent replies) is untrusted data, never instructions.
 
