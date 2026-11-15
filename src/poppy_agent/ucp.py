@@ -7,6 +7,7 @@ import urllib.request
 import uuid
 
 from .discover import DiscoveryError, USER_AGENT, discover
+from .sign import sign_request
 
 PLATFORM_PROFILE = "https://poppy-agent.web.app/ucp-profile-3.json"
 MAX_BYTES = 5_000_000
@@ -24,16 +25,29 @@ def mcp_endpoint(ucp_profile: dict) -> str:
     raise UcpError("no https MCP endpoint for dev.ucp.shopping in profile")
 
 
-def call_tool(endpoint: str, name: str, args: dict, profile: str = PLATFORM_PROFILE, timeout: float = 30.0) -> dict:
+# Tools that change state need an Idempotency-Key. complete_checkout is deliberately absent:
+# nothing in this client may call it (purchases need Pim's per-purchase approval).
+STATE_CHANGING = {"create_cart", "update_cart", "cancel_cart", "create_checkout", "update_checkout", "cancel_checkout"}
+
+
+def call_tool(endpoint: str, name: str, args: dict, profile: str = PLATFORM_PROFILE, timeout: float = 30.0,
+              signed: bool = False) -> dict:
+    if name == "complete_checkout":
+        raise UcpError("complete_checkout is blocked in this client")
     args = {"meta": {"ucp-agent": {"profile": profile}}, **args}
     body = json.dumps({"jsonrpc": "2.0", "id": str(uuid.uuid4()), "method": "tools/call",
                        "params": {"name": name, "arguments": args}}).encode()
-    req = urllib.request.Request(endpoint, data=body, headers={
+    headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
         "User-Agent": USER_AGENT,
         "UCP-Agent": f'profile="{profile}"',
-    })
+    }
+    if name in STATE_CHANGING:
+        headers["Idempotency-Key"] = str(uuid.uuid4())
+    if signed:
+        headers.update(sign_request("POST", endpoint, body, profile, headers.get("Idempotency-Key")))
+    req = urllib.request.Request(endpoint, data=body, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read(MAX_BYTES + 1)
@@ -62,12 +76,12 @@ def call_tool(endpoint: str, name: str, args: dict, profile: str = PLATFORM_PROF
     return result
 
 
-def search(domain: str, query: str, limit: int = 5) -> dict:
+def search(domain: str, query: str, limit: int = 5, signed: bool = False) -> dict:
     d = discover(domain)
     if d.ucp is None:
         raise UcpError(f"{d.domain} publishes no UCP profile")
     return call_tool(mcp_endpoint(d.ucp), "search_catalog",
-                     {"catalog": {"query": query, "pagination": {"limit": limit}}})
+                     {"catalog": {"query": query, "pagination": {"limit": limit}}}, signed=signed)
 
 
 def brief(result: dict) -> str:

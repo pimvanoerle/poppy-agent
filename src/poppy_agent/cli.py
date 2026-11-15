@@ -17,6 +17,7 @@ def main(argv=None) -> int:
     s.add_argument("query")
     s.add_argument("--limit", type=int, default=5)
     s.add_argument("--json", action="store_true", help="raw response")
+    s.add_argument("--signed", action="store_true", help="sign the request (RFC 9421, Signed tier)")
     sub.add_parser("mcp", help="run the MCP server on stdio (read-only tools)")
     args = p.parse_args(argv)
 
@@ -28,7 +29,7 @@ def main(argv=None) -> int:
 
     if args.cmd == "search":
         try:
-            res = search(args.domain, args.query, args.limit)
+            res = search(args.domain, args.query, args.limit, signed=args.signed)
             print(json.dumps(res, indent=2) if args.json else brief(res))
         except (DiscoveryError, UcpError) as e:
             print(f"error: {e}", file=sys.stderr)
